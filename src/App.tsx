@@ -1,121 +1,122 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { useState, type FormEvent } from 'react'
+import { searchArtworks, type Artwork } from './services/artic'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [query, setQuery] = useState('')
+  const [artworks, setArtworks] = useState<Artwork[]>([])
+  const [hasSearched, setHasSearched] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const searchTerm = query.trim()
+    if (!searchTerm) return
+
+    setIsLoading(true)
+    setError('')
+    setHasSearched(true)
+
+    try {
+      setArtworks(await searchArtworks(searchTerm))
+    } catch {
+      setArtworks([])
+      setError('We could not load artworks. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
+    <main className="gallery">
+      <header className="site-header">
+        <a className="wordmark" href="https://www.artic.edu/" target="_blank" rel="noreferrer">
+          <span className="wordmark-mark" aria-hidden="true">AIC</span>
+          <span>Art Institute<br />of Chicago</span>
+        </a>
+        <span className="collection-label">Collection explorer</span>
+      </header>
+
+      <section className="intro" aria-labelledby="page-title">
+        <p className="eyebrow">Explore the collection</p>
+        <h1 id="page-title">Art is for<br /><em>everyone.</em></h1>
+        <p className="intro-copy">
+          Discover artworks from the Art Institute of Chicago. Search by artist,
+          title, place, or anything that sparks your curiosity.
+        </p>
+        <form className="search-form" onSubmit={handleSearch}>
+          <label className="visually-hidden" htmlFor="artwork-search">Search artworks</label>
+          <input
+            id="artwork-search"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Try “Claude Monet” or “water lilies”"
+            required
+          />
+          <button type="submit" disabled={isLoading}>
+            {isLoading ? 'Searching…' : 'Search'}
+          </button>
+        </form>
+        <p className="search-note">Powered by the Art Institute of Chicago public API</p>
       </section>
 
-      <div className="ticks"></div>
+      <section className="results-section" aria-labelledby="results-title" aria-live="polite">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">From the museum collection</p>
+            <h2 id="results-title">{hasSearched ? 'Search results' : 'Start exploring'}</h2>
+          </div>
+          {artworks.length > 0 && <span className="result-count">{artworks.length} artworks</span>}
+        </div>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
+        {isLoading && <p className="status-message">Looking through the collection…</p>}
+        {!isLoading && error && <p className="status-message error" role="alert">{error}</p>}
+        {!isLoading && !error && hasSearched && artworks.length === 0 && (
+          <p className="status-message">No artworks found. Try another search.</p>
+        )}
+        {!hasSearched && (
+          <p className="status-message">Enter a search above to find artworks in the collection.</p>
+        )}
+
+        {artworks.length > 0 && (
+          <div className="artwork-grid">
+            {artworks.map((artwork) => (
+              <article className="artwork-card" key={artwork.id}>
+                <a
+                  className="artwork-image-link"
+                  href={artwork.api_link}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`View ${artwork.title} in the Art Institute collection`}
                 >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
+                  {artwork.image_id ? (
+                    <img
+                      src={`${artwork.iiifUrl}/${artwork.image_id}/full/843,/0/default.jpg`}
+                      alt={artwork.thumbnail?.alt_text || artwork.title}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <span className="image-placeholder">Image not available</span>
+                  )}
+                </a>
+                <div className="artwork-details">
+                  <h3>{artwork.title}</h3>
+                  <p>{artwork.artist_title || 'Artist unknown'}</p>
+                  {artwork.date_display && <span>{artwork.date_display}</span>}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <footer className="site-footer">
+        <span>Artwork data courtesy of the Art Institute of Chicago.</span>
+        <a href="https://api.artic.edu/docs/" target="_blank" rel="noreferrer">API documentation</a>
+      </footer>
+    </main>
   )
 }
 

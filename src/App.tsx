@@ -32,18 +32,16 @@ function App() {
     <main className="gallery">
       <header className="site-header">
         <a className="wordmark" href="https://www.artic.edu/" target="_blank" rel="noreferrer">
-          <span className="wordmark-mark" aria-hidden="true">AIC</span>
-          <span>Art Institute<br />of Chicago</span>
+          <span className="wordmark-mark" aria-hidden="true">: )</span>
+          <span>Sara's Art Institute<br />Exploration Website</span>
         </a>
-        <span className="collection-label">Collection explorer</span>
       </header>
 
       <section className="intro" aria-labelledby="page-title">
         <p className="eyebrow">Explore the collection</p>
-        <h1 id="page-title">Art is for<br /><em>everyone.</em></h1>
+        <h1 id="page-title">Welcome to the virtual Art Institute</h1>
         <p className="intro-copy">
-          Discover artworks from the Art Institute of Chicago. Search by artist,
-          title, place, or anything that sparks your curiosity.
+          Discover artwork from the Art Institute of Chicago.
         </p>
         <form className="search-form" onSubmit={handleSearch}>
           <label className="visually-hidden" htmlFor="artwork-search">Search artworks</label>
@@ -52,7 +50,7 @@ function App() {
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Try “Claude Monet” or “water lilies”"
+            placeholder="Try my favorite piece: 'Nighthawks'"
             required
           />
           <button type="submit" disabled={isLoading}>
@@ -65,7 +63,7 @@ function App() {
       <section className="results-section" aria-labelledby="results-title" aria-live="polite">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">From the museum collection</p>
+            {/* <p className="eyebrow">Header for the next section</p> */}
             <h2 id="results-title">{hasSearched ? 'Search results' : 'Start exploring'}</h2>
           </div>
           {artworks.length > 0 && <span className="result-count">{artworks.length} artworks</span>}
@@ -77,7 +75,7 @@ function App() {
           <p className="status-message">No artworks found. Try another search.</p>
         )}
         {!hasSearched && (
-          <p className="status-message">Enter a search above to find artworks in the collection.</p>
+          <p className="status-message">Search above to find art in the collection.</p>
         )}
 
         {artworks.length > 0 && (

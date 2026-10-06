@@ -7,6 +7,7 @@ const ARTWORK_FIELDS = [
   'title',
   'artist_title',
   'date_display',
+  'description',
   'image_id',
   'thumbnail',
   'api_link',
@@ -39,6 +40,7 @@ export interface Artwork {
   title: string
   artist_title: string | null
   date_display: string | null
+  description: string | null
   image_id: string | null
   thumbnail: {
     alt_text: string

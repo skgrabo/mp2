@@ -374,6 +374,12 @@ function App() {
               <div>
                 <h2>{selectedArtwork.title}</h2>
                 <p>{selectedArtwork.artist_title || 'Artist unknown'}</p>
+                {selectedArtwork.date_display && <span>{selectedArtwork.date_display}</span>}
+                {selectedArtwork.description ? (
+                  <div dangerouslySetInnerHTML={{ __html: selectedArtwork.description }} />
+                ) : (
+                  <span>No description available</span>
+                )}
               </div>
               <a href={selectedArtwork.api_link} target="_blank" rel="noreferrer">
                 View in collection

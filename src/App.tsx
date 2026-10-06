@@ -30,6 +30,22 @@ function App() {
   const [isLoadingDepartments, setIsLoadingDepartments] = useState(false)
   const [isLoadingDepartmentArtworks, setIsLoadingDepartmentArtworks] = useState(false)
   const [departmentError, setDepartmentError] = useState('')
+  const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null)
+
+  useEffect(() => {
+    if (!selectedArtwork) return
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setSelectedArtwork(null)
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = ''
+    }
+  }, [selectedArtwork])
 
   const displayedArtworks = activeView === 'search' ? artworks : departmentArtworks
   const sortedArtworks = [...displayedArtworks]
@@ -198,7 +214,6 @@ function App() {
                 {isLoading ? 'Searching…' : 'Search'}
               </button>
             </form>
-            <p className="search-note">Powered by the Art Institute of Chicago public API</p>
           </>
         )}
       </section>
@@ -291,12 +306,11 @@ function App() {
           <div className="artwork-grid">
             {sortedArtworks.map((artwork) => (
               <article className="artwork-card" key={artwork.id}>
-                <a
+                <button
                   className="artwork-image-link"
-                  href={artwork.api_link}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={`View ${artwork.title} in the Art Institute collection`}
+                  type="button"
+                  aria-label={`Enlarge ${artwork.title}`}
+                  onClick={() => setSelectedArtwork(artwork)}
                 >
                   {artwork.image_id ? (
                     <img
@@ -307,7 +321,7 @@ function App() {
                   ) : (
                     <span className="image-placeholder">Image not available</span>
                   )}
-                </a>
+                </button>
                 <div className="artwork-details">
                   <h3>{artwork.title}</h3>
                   <p>{artwork.artist_title || 'Artist unknown'}</p>
@@ -330,6 +344,45 @@ function App() {
         </section>
       </section>
 
+      {selectedArtwork?.image_id && (
+        <div
+          className="artwork-modal-backdrop"
+          role="presentation"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setSelectedArtwork(null)
+          }}
+        >
+          <section
+            className="artwork-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${selectedArtwork.title} image`}
+          >
+            <button
+              className="artwork-modal-close"
+              type="button"
+              aria-label="Close image"
+              onClick={() => setSelectedArtwork(null)}
+            >
+              ×
+            </button>
+            <img
+              src={`${selectedArtwork.iiifUrl}/${selectedArtwork.image_id}/full/!1600,1600/0/default.jpg`}
+              alt={selectedArtwork.thumbnail?.alt_text || selectedArtwork.title}
+            />
+            <div className="artwork-modal-details">
+              <div>
+                <h2>{selectedArtwork.title}</h2>
+                <p>{selectedArtwork.artist_title || 'Artist unknown'}</p>
+              </div>
+              <a href={selectedArtwork.api_link} target="_blank" rel="noreferrer">
+                View in collection
+              </a>
+            </div>
+          </section>
+        </div>
+      )}
+
       <footer className="site-footer">
         <span>Artwork data courtesy of the Art Institute of Chicago.</span>
         <a href="https://api.artic.edu/docs/" target="_blank" rel="noreferrer">API documentation</a>
@@ -337,5 +390,4 @@ function App() {
     </main>
   )
 }
-
 export default App

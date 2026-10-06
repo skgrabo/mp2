@@ -56,6 +56,10 @@ function App() {
   }
   if (sortDirection === 'ascending') sortedArtworks.reverse()
 
+  const selectedArtworkIndex = selectedArtwork
+    ? sortedArtworks.findIndex((artwork) => artwork.id === selectedArtwork.id)
+    : -1
+
   useEffect(() => {
     if (activeView !== 'search') {
       setIsLoading(false)
@@ -163,9 +167,7 @@ function App() {
   return (
     <main className="gallery">
       <header className="site-header">
-        <a className="wordmark" href="https://www.artic.edu/" target="_blank" rel="noreferrer">
-          <span>Sara's Art Institute Exploration Website</span>
-        </a>
+        <h3>Sara's Art Institute Exploration Website</h3>
       </header>
 
       <section className="intro" aria-labelledby="page-title">
@@ -380,6 +382,30 @@ function App() {
                 ) : (
                   <span>No description available</span>
                 )}
+                <div className="artwork-modal-nav">
+                  <button
+                    type="button"
+                    className="artwork-modal-nav-button"
+                    disabled={selectedArtworkIndex <= 0}
+                    onClick={() => {
+                      const previousArtwork = sortedArtworks[selectedArtworkIndex - 1]
+                      if (previousArtwork) setSelectedArtwork(previousArtwork)
+                    }}
+                  >
+                    Prev
+                  </button>
+                  <button
+                    type="button"
+                    className="artwork-modal-nav-button"
+                    disabled={selectedArtworkIndex === -1 || selectedArtworkIndex >= sortedArtworks.length - 1}
+                    onClick={() => {
+                      const nextArtwork = sortedArtworks[selectedArtworkIndex + 1]
+                      if (nextArtwork) setSelectedArtwork(nextArtwork)
+                    }}
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
               <a href={selectedArtwork.api_link} target="_blank" rel="noreferrer">
                 View in collection

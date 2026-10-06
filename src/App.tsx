@@ -1,86 +1,295 @@
-import { useState, type FormEvent } from 'react'
-import { searchArtworks, type Artwork } from './services/artic'
+import { useEffect, useState, type FormEvent } from 'react'
+import {
+  getDepartmentArtworks,
+  getDepartments,
+  searchArtworks,
+  type Artwork,
+  type Department,
+} from './services/artic'
 import './App.css'
+
+type SortMode = 'relevance' | 'alphabetical'
+type SortDirection = 'ascending' | 'descending'
+type ViewMode = 'search' | 'departments'
 
 function App() {
   const [query, setQuery] = useState('')
   const [artworks, setArtworks] = useState<Artwork[]>([])
+  const [departmentArtworks, setDepartmentArtworks] = useState<Artwork[]>([])
+  const [departments, setDepartments] = useState<Department[]>([])
+  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null)
+  const [activeView, setActiveView] = useState<ViewMode>('search')
+  const [sortMode, setSortMode] = useState<SortMode>('relevance')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('descending')
+  const [departmentPage, setDepartmentPage] = useState(1)
+  const [departmentHasMore, setDepartmentHasMore] = useState(false)
+  const [searchImmediately, setSearchImmediately] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isLoadingDepartments, setIsLoadingDepartments] = useState(false)
+  const [isLoadingDepartmentArtworks, setIsLoadingDepartmentArtworks] = useState(false)
+  const [departmentError, setDepartmentError] = useState('')
+
+  const displayedArtworks = activeView === 'search' ? artworks : departmentArtworks
+  const sortedArtworks = [...displayedArtworks]
+  if (sortMode === 'alphabetical') {
+    sortedArtworks.sort((left, right) =>
+      left.title.localeCompare(right.title, undefined, { sensitivity: 'base' }),
+    )
+  }
+  if (sortDirection === 'ascending') sortedArtworks.reverse()
+
+  useEffect(() => {
+    if (activeView !== 'search') {
+      setIsLoading(false)
+      return
+    }
+
+    const searchTerm = query.trim()
+    if (!searchTerm) {
+      setArtworks([])
+      setHasSearched(false)
+      setIsLoading(false)
+      setError('')
+      return
+    }
+
+    const controller = new AbortController()
+    const timeoutId = window.setTimeout(async () => {
+      setIsLoading(true)
+      setError('')
+      setHasSearched(true)
+
+      try {
+        setArtworks(await searchArtworks(searchTerm, controller.signal))
+      } catch {
+        if (!controller.signal.aborted) {
+          setArtworks([])
+          setError('We could not load artworks. Please try again.')
+        }
+      } finally {
+        if (!controller.signal.aborted) setIsLoading(false)
+      }
+    }, searchImmediately ? 0 : 300)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+      controller.abort()
+    }
+  }, [activeView, query, searchImmediately])
+
+  useEffect(() => {
+    if (activeView !== 'departments' || departments.length > 0) return
+
+    const controller = new AbortController()
+    setIsLoadingDepartments(true)
+    getDepartments(controller.signal)
+      .then(setDepartments)
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setDepartmentError('We could not load departments. Please try again.')
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setIsLoadingDepartments(false)
+      })
+
+    return () => controller.abort()
+  }, [activeView, departments.length])
+
+  useEffect(() => {
+    if (activeView !== 'departments' || !selectedDepartment) {
+      setIsLoadingDepartmentArtworks(false)
+      return
+    }
+
+    const controller = new AbortController()
+    setIsLoadingDepartmentArtworks(true)
+    setDepartmentError('')
+    getDepartmentArtworks(selectedDepartment.title, departmentPage, controller.signal)
+      .then(({ artworks: pageArtworks, hasMore }) => {
+        setDepartmentArtworks((current) =>
+          departmentPage === 1 ? pageArtworks : [...current, ...pageArtworks],
+        )
+        setDepartmentHasMore(hasMore)
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setDepartmentError('We could not load these artworks. Please try again.')
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setIsLoadingDepartmentArtworks(false)
+      })
+
+    return () => controller.abort()
+  }, [activeView, departmentPage, selectedDepartment])
 
   async function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const searchTerm = query.trim()
-    if (!searchTerm) return
+    if (query.trim()) setSearchImmediately(true)
+  }
 
-    setIsLoading(true)
-    setError('')
-    setHasSearched(true)
+  function selectDepartment(department: Department) {
+    setSelectedDepartment(department)
+    setDepartmentArtworks([])
+    setDepartmentPage(1)
+    setDepartmentHasMore(false)
+    setDepartmentError('')
+  }
 
-    try {
-      setArtworks(await searchArtworks(searchTerm))
-    } catch {
-      setArtworks([])
-      setError('We could not load artworks. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
+  function switchView(view: ViewMode) {
+    setActiveView(view)
+    if (view === 'search') setDepartmentPage(1)
   }
 
   return (
     <main className="gallery">
       <header className="site-header">
         <a className="wordmark" href="https://www.artic.edu/" target="_blank" rel="noreferrer">
-          <span className="wordmark-mark" aria-hidden="true">: )</span>
-          <span>Sara's Art Institute<br />Exploration Website</span>
+          <span>Sara's Art Institute Exploration Website</span>
         </a>
       </header>
 
       <section className="intro" aria-labelledby="page-title">
-        <p className="eyebrow">Explore the collection</p>
-        <h1 id="page-title">Welcome to the virtual Art Institute</h1>
+        <h1 id="page-title">Welcome to the Virtual Art Institute</h1>
         <p className="intro-copy">
           Discover artwork from the Art Institute of Chicago.
         </p>
-        <form className="search-form" onSubmit={handleSearch}>
-          <label className="visually-hidden" htmlFor="artwork-search">Search artworks</label>
-          <input
-            id="artwork-search"
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Try my favorite piece: 'Nighthawks'"
-            required
-          />
-          <button type="submit" disabled={isLoading}>
-            {isLoading ? 'Searching…' : 'Search'}
+        <div className="view-switch" role="tablist" aria-label="Collection views">
+          <button
+            id="search-tab"
+            type="button"
+            role="tab"
+            aria-selected={activeView === 'search'}
+            aria-controls="collection-panel"
+            onClick={() => switchView('search')}
+          >
+            Search Artworks
           </button>
-        </form>
-        <p className="search-note">Powered by the Art Institute of Chicago public API</p>
+          <button
+            id="departments-tab"
+            type="button"
+            role="tab"
+            aria-selected={activeView === 'departments'}
+            aria-controls="collection-panel"
+            onClick={() => switchView('departments')}
+          >
+            Department Gallery
+          </button>
+        </div>
+        {activeView === 'search' && (
+          <>
+            <form className="search-form" onSubmit={handleSearch}>
+              <label className="visually-hidden" htmlFor="artwork-search">Search artworks</label>
+              <input
+                id="artwork-search"
+                type="search"
+                value={query}
+                onChange={(event) => {
+                  setSearchImmediately(false)
+                  setQuery(event.target.value)
+                }}
+                placeholder="Try my favorite piece: 'Nighthawks'"
+                required
+              />
+              <button type="submit" disabled={isLoading}>
+                {isLoading ? 'Searching…' : 'Search'}
+              </button>
+            </form>
+            <p className="search-note">Powered by the Art Institute of Chicago public API</p>
+          </>
+        )}
       </section>
 
-      <section className="results-section" aria-labelledby="results-title" aria-live="polite">
+      <section id="collection-panel" className="collection-panel" role="tabpanel" aria-labelledby={`${activeView}-tab`}>
+        {activeView === 'departments' && (
+          <nav className="department-browser" aria-labelledby="departments-title">
+            <h2 id="departments-title">Departments</h2>
+            {isLoadingDepartments && <p className="status-message">Loading departments…</p>}
+            {!isLoadingDepartments && departmentError && (
+              <p className="status-message error" role="alert">{departmentError}</p>
+            )}
+            <div className="department-list">
+              {departments.map((department) => (
+                <button
+                  className="department-button"
+                  type="button"
+                  key={department.id}
+                  aria-pressed={selectedDepartment?.id === department.id}
+                  onClick={() => selectDepartment(department)}
+                >
+                  {department.title}
+                </button>
+              ))}
+            </div>
+          </nav>
+        )}
+
+        <section className="results-section" aria-labelledby="results-title" aria-live="polite">
         <div className="section-heading">
           <div>
-            {/* <p className="eyebrow">Header for the next section</p> */}
-            <h2 id="results-title">{hasSearched ? 'Search results' : 'Start exploring'}</h2>
+            <h2 id="results-title">
+              {activeView === 'search'
+                ? hasSearched ? 'Search results' : ' '
+                : selectedDepartment?.title || 'Choose a department'}
+            </h2>
           </div>
-          {artworks.length > 0 && <span className="result-count">{artworks.length} artworks</span>}
+          {displayedArtworks.length > 0 && (
+            <div className="results-tools">
+              <span className="result-count">{displayedArtworks.length} artworks</span>
+              <label className="visually-hidden" htmlFor="sort-mode">Sort results</label>
+              <select
+                id="sort-mode"
+                className="sort-select"
+                value={sortMode}
+                onChange={(event) => setSortMode(event.target.value as SortMode)}
+              >
+                <option value="relevance">Relevance</option>
+                <option value="alphabetical">Alphabetical</option>
+              </select>
+              <button
+                className="sort-direction"
+                type="button"
+                aria-label={`Switch to ${sortDirection === 'ascending' ? 'descending' : 'ascending'} order`}
+                onClick={() => setSortDirection(sortDirection === 'ascending' ? 'descending' : 'ascending')}
+              >
+                {sortDirection === 'ascending' ? '↑ Ascending' : '↓ Descending'}
+              </button>
+            </div>
+          )}
         </div>
 
-        {isLoading && <p className="status-message">Looking through the collection…</p>}
-        {!isLoading && error && <p className="status-message error" role="alert">{error}</p>}
-        {!isLoading && !error && hasSearched && artworks.length === 0 && (
+        {activeView === 'search' && isLoading && (
+          <p className="status-message">Looking through the collection…</p>
+        )}
+        {activeView === 'search' && !isLoading && error && (
+          <p className="status-message error" role="alert">{error}</p>
+        )}
+        {activeView === 'search' && !isLoading && !error && hasSearched && artworks.length === 0 && (
           <p className="status-message">No artworks found. Try another search.</p>
         )}
-        {!hasSearched && (
-          <p className="status-message">Search above to find art in the collection.</p>
+        {activeView === 'search' && !hasSearched && (
+          <p className="status-message">Search above to find art in the collection or view the department gallery.</p>
         )}
+        {activeView === 'departments' && isLoadingDepartmentArtworks && departmentArtworks.length === 0 && (
+          <p className="status-message">Loading department artworks…</p>
+        )}
+        {activeView === 'departments' && !isLoadingDepartmentArtworks && departmentError && (
+          <p className="status-message error" role="alert">{departmentError}</p>
+        )}
+        {activeView === 'departments' && !selectedDepartment && !isLoadingDepartments && (
+          <p className="status-message">Choose a department to browse its artworks.</p>
+        )}
+        {activeView === 'departments' && selectedDepartment && !isLoadingDepartmentArtworks &&
+          !departmentError && departmentArtworks.length === 0 && (
+            <p className="status-message">No artworks found in this department.</p>
+          )}
 
-        {artworks.length > 0 && (
+        {displayedArtworks.length > 0 && (
           <div className="artwork-grid">
-            {artworks.map((artwork) => (
+            {sortedArtworks.map((artwork) => (
               <article className="artwork-card" key={artwork.id}>
                 <a
                   className="artwork-image-link"
@@ -108,6 +317,17 @@ function App() {
             ))}
           </div>
         )}
+        {activeView === 'departments' && departmentHasMore && (
+          <button
+            className="load-more-button"
+            type="button"
+            disabled={isLoadingDepartmentArtworks}
+            onClick={() => setDepartmentPage((page) => page + 1)}
+          >
+            {isLoadingDepartmentArtworks ? 'Loading…' : 'Load more artworks'}
+          </button>
+        )}
+        </section>
       </section>
 
       <footer className="site-footer">

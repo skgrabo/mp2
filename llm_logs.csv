@@ -60,7 +60,6 @@ Use dangerouslySetInnerHTML:
 
 That will correctly display markup such as:
 
-
 I updated that in App.tsx.
 
 This is the standard React pattern when the backend already provides HTML, but it’s worth keeping in mind that the content is trusted because it comes from the API.

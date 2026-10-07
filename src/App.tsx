@@ -407,9 +407,9 @@ function App() {
                   </button>
                 </div>
               </div>
-              <a href={selectedArtwork.api_link} target="_blank" rel="noreferrer">
+              {/* <a href={selectedArtwork.api_link} target="_blank" rel="noreferrer">
                 View in collection
-              </a>
+              </a> */}
             </div>
           </section>
         </div>

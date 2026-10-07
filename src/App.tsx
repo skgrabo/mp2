@@ -250,7 +250,7 @@ function App() {
             <h2 id="results-title">
               {activeView === 'search'
                 ? hasSearched ? 'Search results' : ' '
-                : selectedDepartment?.title || 'Choose a department'}
+                : selectedDepartment?.title || ' '}
             </h2>
           </div>
           {displayedArtworks.length > 0 && (

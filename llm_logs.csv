@@ -141,3 +141,23 @@ GPT-6 Luna • 3.3 credits
 
 2:58 PM
 I want to be able to swap between the search view and a gallery view, the gallery view should have a list of all department_title at the top and when one is clicked, it shows a gallery of all of the artworks from that depar
+
+how can i add the art institute of chicago api to my project? https://github.com/art-institute-of-chicago/data-aggregator
+
+Created isolated worktree for branch agents/add-art-institute-chicago-api
+
+I’ll check the project structure and existing data/API patterns first, then I can show where the Art Institute integration fits.
+
+The workspace is currently the untouched Vite starter, so there isn’t an existing API layer to extend. I’m checking the museum API’s public endpoint and the app’s global styles before wiring a small working example into the starter screen.
+
+I verified the API supports unauthenticated artwork search and returns an IIIF image base URL. I’m adding a small search-and-results example now, with typed API responses, loading/error states, and image links—so you can run it locally and see the integration working.
+
+The search flow is wired up. I’m running the TypeScript/Vite build and lint now to catch integration or typing issues.
+
+The build and lint commands could not start because dependencies are not installed in this checkout (tsc and oxlint are missing). I’ll restore the locked dependencies and rerun both checks.
+
+The Art Institute’s data-aggregator repository is the code behind its API; for this React app, you can call the hosted public API directly—no API key or backend setup is needed. I added a working collection-search example to the project:
+
+src/services/artic.ts calls the artwork search endpoint and requests only the fields the UI needs.
+src/App.tsx provides a search form, artwork results, and loading, error, and empty states.
+src/App.css and src/index.css style the responsive gallery; index.html updates the page title and description.

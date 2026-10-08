@@ -359,18 +359,18 @@
 
 .artwork-modal {
   position: relative;
-  display: flex;
+  display: grid;
   width: min(1100px, 100%);
+  height: min(820px, calc(100dvh - 48px));
   max-height: 100%;
-  flex-direction: column;
-  overflow-y: auto;
+  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+  overflow: hidden;
   background: #f8f7f3;
 }
 
 .artwork-modal > img {
   width: 100%;
-  min-height: 0;
-  max-height: calc(100vh - 150px);
+  height: 100%;
   object-fit: contain;
   background: #171614;
 }
@@ -394,11 +394,9 @@
 }
 
 .artwork-modal-details {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 16px 20px;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 28px 24px;
 }
 
 .artwork-modal-details h2,
@@ -518,6 +516,19 @@
 
   .artwork-modal-backdrop {
     padding: 12px;
+  }
+
+  .artwork-modal {
+    display: flex;
+    height: auto;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .artwork-modal > img {
+    height: auto;
+    max-height: 45vh;
+    flex: 0 0 auto;
   }
 
   .artwork-modal-details {
